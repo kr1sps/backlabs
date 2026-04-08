@@ -1,0 +1,71 @@
+// src/orders/orders.controller.ts
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import { OrdersService } from './orders.service';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { OrderStatus } from './entities/order.entity';
+import { UserRole } from '../users/entities/user.entity';
+
+// Временная заглушка для получения userId и role из запроса
+// В ЛР7 заменим на настоящий JwtAuthGuard и кастомный декоратор @User()
+interface RequestWithUser {
+  user?: {
+    id: string;
+    role: UserRole;
+  };
+}
+
+@Controller('orders')
+export class OrdersController {
+  constructor(private readonly ordersService: OrdersService) {
+  }
+
+  @Post()
+  create(@Body() createOrderDto: CreateOrderDto, @Req() req: RequestWithUser) {
+    // Пока userId получаем из заглушки, позже из JWT
+    const userId = req.user?.id || 'temp-user-id'; // Временно для тестов
+    return this.ordersService.create(userId, createOrderDto);
+  }
+
+  @Get()
+  findAll(@Query('status') status?: OrderStatus, @Req() req?: RequestWithUser) {
+    const userId = req?.user?.id;
+    const role = req?.user?.role || UserRole.CUSTOMER;
+    return this.ordersService.findAll(userId, role, status);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @Req() req?: RequestWithUser) {
+    const userId = req?.user?.id;
+    const role = req?.user?.role || UserRole.CUSTOMER;
+    return this.ordersService.findOne(id, userId, role);
+  }
+
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+    @Body() updateOrderStatusDto: UpdateOrderStatusDto,
+    @Req() req?: RequestWithUser,
+  ) {
+    const role = req?.user?.role || UserRole.CUSTOMER;
+    return this.ordersService.updateStatus(id, updateOrderStatusDto, role);
+  }
+
+  @Delete(':id')
+  cancel(@Param('id') id: string, @Req() req?: RequestWithUser) {
+    const userId = req?.user?.id || 'temp-user-id';
+    const role = req?.user?.role || UserRole.CUSTOMER;
+    return this.ordersService.cancel(id, userId, role);
+  }
+}
